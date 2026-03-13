@@ -52,6 +52,8 @@ def print_banner():
     print("  ║  Open AG Patcher v" + VERSION + "                       ║")
     print("  ║  Region bypass for Antigravity                ║")
     print("  ║  Clean • No keys • No telemetry               ║")
+    print("  ║  Telegram Channel: t.me/avencoresyt           ║")
+    print("  ║  YouTube Channel:  youtube.com/@avencores     ║")
     print("  ╚═══════════════════════════════════════════════╝")
     print()
 
