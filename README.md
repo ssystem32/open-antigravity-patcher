@@ -26,6 +26,22 @@
 
 <img width="979" height="512" alt="1" src="https://github.com/user-attachments/assets/367f64de-241f-4210-84ad-5b9fecd76334" />
 
+# 🎦 Видео гайд по установке и решению проблем
+
+
+
+<div align="center">
+
+[**Смотреть на YouTube**](https://youtu.be/hMOeXUQHy4I)
+
+[**Смотреть на Dzen**](https://dzen.ru/video/watch/69b43e995330f8608c7b39e3)
+
+[**Смотреть в VK Video**](https://vkvideo.ru/video-234234162_456239068)
+
+[**Смотреть в Telegram**](https://t.me/avencoreschat/456321)
+
+</div>
+
 ## 🌟 Возможности
 - Автоматический поиск установленного Antigravity в стандартных путях и реестре Windows.
 - Создание резервной копии `main.js.bak` перед изменениями.
