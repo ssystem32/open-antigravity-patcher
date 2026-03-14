@@ -28,7 +28,7 @@
 
 # 🎦 Видео гайд по установке и решению проблем
 
-
+<img width="979" height="512" alt="1" src="https://i127.fastpic.org/big/2026/0314/98/07b762c3a6a29ff220a66da40e16e698.png?md5=BNMT3ALCT2xXPA_7iuzW2g&expires=1773496800" />
 
 <div align="center">
 
