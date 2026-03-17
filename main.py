@@ -4,8 +4,10 @@ import re
 import hashlib
 import time
 import ctypes
+from packaging.version import Version
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
+MIN_AG_VERSION = "1.20.5"
 USE_COLOR = False
 
 CSI = "\x1b["
@@ -134,6 +136,49 @@ def find_main_js(root):
             return p
     return ""
 
+def get_ag_version(main_js_path):
+    """
+    Читает версию Antigravity только из реестра Windows.
+    """
+    if os.name == 'nt':
+        try:
+            import winreg
+            for hive, key_path in[
+                (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AA73B3E3-C6C8-45C8-B1DC-4AE56C751432}_is1"),
+                (winreg.HKEY_LOCAL_MACHINE, r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AA73B3E3-C6C8-45C8-B1DC-4AE56C751432}_is1")
+            ]:
+                try:
+                    with winreg.OpenKey(hive, key_path) as key:
+                        display_ver, _ = winreg.QueryValueEx(key, "DisplayVersion")
+                        if display_ver and display_ver.strip():
+                            return display_ver.strip()
+                except OSError:
+                    pass
+        except ImportError:
+            pass
+
+    return None
+
+def check_ag_version(main_js_path):
+    """
+    Проверяет, что версия Antigravity не ниже MIN_AG_VERSION.
+    Возвращает (ok, detected_version_str):
+      ok = True   — версия подходит
+      ok = False  — версия слишком старая
+      ok = None   — не удалось определить / распарсить
+    """
+    ver_str = get_ag_version(main_js_path)
+
+    if ver_str is None:
+        return None, None
+
+    try:
+        detected = Version(ver_str)
+        minimum  = Version(MIN_AG_VERSION)
+        return detected >= minimum, ver_str
+    except Exception:
+        return None, ver_str
+
 def apply_patches(content):
     results =[]
     original = content
@@ -243,6 +288,32 @@ def file_size(path):
         return 0
 
 def do_patch(main_js_path):
+    # --- Проверка минимальной версии ---
+    ver_ok, ver_str = check_ag_version(main_js_path)
+
+    if ver_str is not None:
+        print(f"  [*] Antigravity version: {ver_str}")
+
+    if ver_ok is False:
+        # Версия определена, но ниже минимальной
+        print(color(f"  [!] Unsupported version: {ver_str}", COLOR_RED))
+        print(color(f"  [!] Minimum required: {MIN_AG_VERSION}", COLOR_RED))
+        print(f"  [i] Please update Antigravity and try again.")
+        return
+    elif ver_ok is None and ver_str is None:
+        # Версия в реестре не найдена
+        print(color("  [!] Could not detect Antigravity version (registry key not found).", COLOR_YELLOW))
+        c = input(f"  [?] Proceed without version check? (y/n): ").strip().lower()
+        if c != 'y':
+            return
+    elif ver_ok is None and ver_str is not None:
+        # Версия найдена, но не удалось распарсить
+        print(color(f"  [!] Could not parse version string: {ver_str}", COLOR_YELLOW))
+        c = input(f"  [?] Proceed anyway? (y/n): ").strip().lower()
+        if c != 'y':
+            return
+    # else: ver_ok is True — версия подходит, продолжаем
+
     try:
         with open(main_js_path, "r", encoding="utf-8") as f:
             content = f.read()
