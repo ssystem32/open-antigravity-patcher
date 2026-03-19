@@ -6,7 +6,7 @@ import time
 import ctypes
 from packaging.version import Version
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 MIN_AG_VERSION = "1.20.5"
 USE_COLOR = False
 
@@ -153,7 +153,35 @@ def get_ag_version(main_js_path):
     Читает версию Antigravity из реестра Windows или package.json на Linux.
     """
     if os.name == 'posix':
-        # Ищем package.json рядом с main.js или на уровень выше
+        # Сначала пробуем dpkg (apt-установка)
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["dpkg-query", "-W", "-f=${Version}", "antigravity"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                ver = result.stdout.strip()
+                if ver:
+                    return ver
+        except Exception:
+            pass
+
+        # rpm-based (Fedora, RHEL, openSUSE и др.)
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["rpm", "-q", "--queryformat", "%{VERSION}", "antigravity"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                ver = result.stdout.strip()
+                if ver:
+                    return ver
+        except Exception:
+            pass
+
+        # Fallback: package.json (portable / snap / flatpak)
         for rel in (
             os.path.join(os.path.dirname(main_js_path), "..", "package.json"),
             os.path.join(os.path.dirname(main_js_path), "package.json"),
