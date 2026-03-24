@@ -101,7 +101,25 @@ def run_as_admin():
 def find_install_root():
     candidates =[]
 
-    if os.name == 'posix':
+    if sys.platform == 'darwin':
+        # macOS: .app bundle paths
+        candidates.append("/Applications/Antigravity.app/Contents")
+        home = os.path.expanduser("~")
+        candidates.append(os.path.join(home, "Applications", "Antigravity.app", "Contents"))
+        # Spotlight search for Antigravity.app
+        try:
+            result = subprocess.run(
+                ["mdfind", "kMDItemCFBundleIdentifier == '*antigravity*'"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                for line in result.stdout.strip().splitlines():
+                    line = line.strip()
+                    if line.endswith(".app"):
+                        candidates.append(os.path.join(line, "Contents"))
+        except Exception:
+            pass
+    elif os.name == 'posix':
         candidates.append("/usr/share/antigravity")
 
     if os.name == 'nt':
@@ -144,6 +162,8 @@ def find_main_js(root):
     for sub in[
         os.path.join("resources", "app", "out", "main.js"),
         os.path.join("resources", "app", "main.js"),
+        os.path.join("Resources", "app", "out", "main.js"),
+        os.path.join("Resources", "app", "main.js"),
         "main.js"
     ]:
         p = os.path.join(root, sub)
@@ -153,8 +173,52 @@ def find_main_js(root):
 
 def get_ag_version(main_js_path):
     """
-    Читает версию Antigravity из реестра Windows или package.json на Linux.
+    Читает версию Antigravity из реестра Windows, Info.plist на macOS
+    или пакетного менеджера / package.json на Linux.
     """
+    if sys.platform == 'darwin':
+        # macOS: читаем версию из Info.plist внутри .app бандла
+        try:
+            import plistlib
+            # main_js_path может быть внутри .app/Contents/Resources/app/out/main.js
+            # Ищем Info.plist в Contents/
+            path = os.path.normpath(main_js_path)
+            while path and path != os.path.dirname(path):
+                parent = os.path.dirname(path)
+                info_plist = os.path.join(parent, "Info.plist")
+                if os.path.exists(info_plist) and os.path.basename(os.path.dirname(parent)).endswith(".app"):
+                    # Нашли Info.plist в Contents/ внутри .app
+                    pass
+                if os.path.basename(parent) == "Contents":
+                    info_plist = os.path.join(parent, "Info.plist")
+                    if os.path.exists(info_plist):
+                        with open(info_plist, "rb") as f:
+                            plist = plistlib.load(f)
+                        ver = plist.get("CFBundleShortVersionString") or plist.get("CFBundleVersion", "")
+                        if ver and ver.strip():
+                            return ver.strip()
+                path = parent
+        except Exception:
+            pass
+
+        # Fallback: package.json
+        for rel in (
+            os.path.join(os.path.dirname(main_js_path), "..", "package.json"),
+            os.path.join(os.path.dirname(main_js_path), "package.json"),
+        ):
+            pkg = os.path.normpath(rel)
+            if os.path.exists(pkg):
+                try:
+                    import json
+                    with open(pkg, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    ver = data.get("version", "").strip()
+                    if ver:
+                        return ver
+                except Exception:
+                    pass
+        return None
+
     if os.name == 'posix':
         # Сначала пробуем dpkg (apt-установка)
         try:
@@ -716,6 +780,8 @@ def main():
         print("  [i] Put main.js next to ag_patcher.py, or specify path:")
         if os.name == 'nt':
             print("      python ag_patcher.py C:\\path\\to\\Antigravity")
+        elif sys.platform == 'darwin':
+            print("      python main.py /Applications/Antigravity.app/Contents")
         else:
             print("      python ag_patcher.py /usr/share/antigravity")
         input("\n  Press Enter to exit...")
@@ -766,7 +832,11 @@ if __name__ == "__main__":
         else:
             print("  [!] Could not elevate privileges. The script may fail to modify files.")
     elif os.name == 'posix' and not is_admin():
-        print("  [!] Root access is required to patch files in /usr/share/antigravity.")
+        if sys.platform == 'darwin':
+            hint = "/Applications/Antigravity.app"
+        else:
+            hint = "/usr/share/antigravity"
+        print(f"  [!] Root access may be required to patch files in {hint}.")
         c = input(f"  [?] Re-launch with sudo? ({color('y', COLOR_GREEN)}/{color('n', COLOR_RED)}): ").strip().lower()
         if c == 'y':
             try:

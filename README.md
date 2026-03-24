@@ -68,13 +68,14 @@ Headers: {"Alt-Svc":["h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"],"Cont
 ## 🌟 Возможности
 - Автоматический поиск установленного Antigravity в стандартных путях и реестре Windows.
 - Поддержка Linux: поиск по `/usr/share/antigravity`, определение версии через `dpkg`, `rpm` и `package.json`.
+- Поддержка macOS: поиск `.app` бандлов в `/Applications` и `~/Applications`, определение версии через `Info.plist`, поиск через Spotlight.
 - Создание резервной копии `main.js.bak` перед изменениями.
 - Применение и откат патча через простое меню.
 - Поддержка путей `resources/app/out/main.js` и `resources/app/main.js`.
-- Цветной вывод и попытка автоматического повышения прав (UAC на Windows, предложение `sudo` на Linux).
+- Цветной вывод и попытка автоматического повышения прав (UAC на Windows, предложение `sudo` на Linux/macOS).
 - Проверка минимальной версии Antigravity (>= `1.20.5`) перед применением патча.
 - Отображение версии Antigravity, размера файла и SHA-256 хэша до/после патча.
-- Определение версии Antigravity через реестр Windows или пакетный менеджер на Linux.
+- Определение версии Antigravity через реестр Windows, `Info.plist` на macOS или пакетный менеджер на Linux.
 - Обнаружение уже применённого патча с предложением применить повторно.
 
 ## 🚀 Как использовать
@@ -103,6 +104,10 @@ python main.py "C:\\Program Files\\Antigravity\\resources\\app\\out\\main.js"
 # Linux
 python main.py /usr/share/antigravity
 python main.py /usr/share/antigravity/resources/app/out/main.js
+
+# macOS
+python main.py /Applications/Antigravity.app/Contents
+python main.py /Applications/Antigravity.app/Contents/Resources/app/out/main.js
 ```
 
 Если `main.js` находится рядом со скриптом, путь указывать не нужно — он будет найден автоматически.
